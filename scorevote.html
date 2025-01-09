@@ -80,29 +80,25 @@
        const width = canvas.width;
        const height = canvas.height;
 
-       // Spots setup
        const spots = [
            { x: 150, y: 350, color: 'red', votes: [0, 0, 0, 0, 0] },
            { x: 250, y: 150, color: 'lime', votes: [0, 0, 0, 0, 0] },
            { x: 350, y: 250, color: 'blue', votes: [0, 0, 0, 0, 0] }
        ];
 
-       // Array to store 300 voter dots with random positions
        const dots = Array.from({ length: 300 }, () => ({
            x: Math.random() * width,
            y: Math.random() * height,
        }));
 
-       // Function to calculate squared distance between two points
+       // Function to calculate squared distance between two points yahooooo
        function calculateSquaredDistance(x1, y1, x2, y2) {
            return ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1));
        }
 
        // Function to map squared distance to a rating between 1 and 5 based on thresholds
        function mapDistanceToRating(x1, y1, x2, y2) {
-           const gdistance = calculateSquaredDistance(x1, y1, x2, y2); // Squared distance
-
-           // Set adjusted threshold values for each rating category (squared distance)
+           const gdistance = calculateSquaredDistance(x1, y1, x2, y2);
            const thresholds = {
                1: 90000,  // farthest distance (lowest rating)
                2: 70000,
@@ -120,7 +116,7 @@
            return 1;  // Default to rating 1 if no threshold matches
        }
 
-       // Function to draw spots on the canvas
+      
        function drawSpots() {
            spots.forEach(spot => {
                ctx.beginPath();
@@ -130,7 +126,7 @@
            });
        }
 
-       // Function to draw dots (voters)
+    
        function drawDots() {
            dots.forEach(dot => {
                ctx.beginPath();
@@ -142,7 +138,6 @@
 
        // Calculate the votes for each spot
        function calculateVotes() {
-           // Reset votes
            spots.forEach(spot => {
                spot.votes = [0, 0, 0, 0, 0];
            });
@@ -151,11 +146,7 @@
            dots.forEach(dot => {
                spots.forEach(spot => {
                    const distance = calculateSquaredDistance(dot.x, dot.y, spot.x, spot.y);
-
-                   // Map the distance to a rating between 1 and 5
                    const rating = mapDistanceToRating(dot.x, dot.y, spot.x, spot.y);
-
-                   // Increment the corresponding rating for this spot
                    spot.votes[rating - 1] += 1;
                });
            });
@@ -163,7 +154,6 @@
            updateTable();
        }
 
-       // Update the rating table
        function updateTable() {
            spots.forEach((spot, index) => {
                const colors = ['red', 'lime', 'blue'];
@@ -175,7 +165,6 @@
            });
        }
 
-       // Drag functionality for moving spots
        let draggingSpot = null;
 
        canvas.addEventListener('mousedown', e => {
@@ -198,17 +187,17 @@
            draggingSpot = null;
        });
 
-       // Draw function
        function draw() {
-           ctx.clearRect(0, 0, width, height); // Clear canvas
+           ctx.clearRect(0, 0, width, height); 
            drawSpots();
            drawDots();
            calculateVotes();
        }
-
-       // Initial drawing
        draw();
+      
    </script>
+   
     <a href="https://hahuri143.github.io/Votingsystems/graph.html" title="Voting timee">Other Graphs</a>
+   
 </body>
 </html>
