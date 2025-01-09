@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Voting systems</title>
+   <style>
+       canvas {
+           border: 1px solid black;
+           display: block;
+           margin: 20px auto;
+       }
+       .controls {
+           text-align: center;
+           margin-top: 10px;
+       }
+       .controls button {
+           margin: 5px;
+       }
+       table {
+           margin: 10px auto;
+           border-collapse: collapse;
+       }
+       th, td {
+           border: 1px solid black;
+           padding: 5px 10px;
+       }
+   </style>
+</head>
+<body>
+   <canvas id="xyCanvas" width="500" height="500"></canvas>
+   <div class="controls">
+       <button id="toggleRadiusEffect">Enable Radius Effect</button>
+       <table>
+           <thead>
+               <tr>
+                   <th>Candidates</th>
+                   <th>Votes Count</th>
+               </tr>
+           </thead>
+           <tbody id="dotCountTable">
+               <tr><td>Red</td><td id="redCount">0</td></tr>
+               <tr><td>Lime</td><td id="limeCount">0</td></tr>
+               <tr><td>Blue</td><td id="blueCount">0</td></tr>
+           </tbody>
+       </table>
+       <button id="toggleRed">Toggle Red Spot</button>
+       <button id="toggleLime">Toggle Lime Spot</button>
+       <button id="toggleBlue">Toggle Blue Spot</button>
+   </div>
+
+
+   <script>
+       const canvas = document.getElementById('xyCanvas');
+       const ctx = canvas.getContext('2d');
+
+
+       const width = canvas.width;
+       const height = canvas.height;
+       const centerX = width / 2;
+       const centerY = height / 2;
+
+
+       const radiusEffectEnabled = { value: false };
+
+
+       // data of spotty and dotty
+       const dots = Array.from({ length: 200 }, () => ({
+           x: Math.random() * width,
+           y: Math.random() * height,
+           color: "gray",
+       }));
+
+
+       const spots = [
+           { x: 150, y: 350, color: 'red', active: true },
+           { x: 250, y: 150, color: 'lime', active: true },
+           { x: 350, y: 250, color: 'blue', active: true },
+       ];
+
+
+       const RADIUS_DISTANCE = 150; // Radius for effect sparkleeeee
+
+
+       // Colour blender
+       function blendColors(colors) {
+           const colorMap = {
+               red: [255, 0, 0],
+               lime: [0, 255, 0],
+               blue: [0, 0, 255],
+           };
+           let r = 0, g = 0, b = 0;
+           colors.forEach(color => {
+               const [cr, cg, cb] = colorMap[color];
+               r += cr; g += cg; b += cb;
+           });
+           r = Math.min(255, Math.floor(r / colors.length));
+           g = Math.min(255, Math.floor(g / colors.length));
+           b = Math.min(255, Math.floor(b / colors.length));
+           return `rgb(${r}, ${g}, ${b})`;
+       }
+
+
+       function drawAxes() {
+           ctx.beginPath();
+           ctx.moveTo(0, centerY);
+           ctx.lineTo(width, centerY);
+           ctx.moveTo(centerX, 0);
+           ctx.lineTo(centerX, height);
+           ctx.strokeStyle = 'black';
+           ctx.stroke();
+       }
+
+
+       function drawSpots() {
+           spots.forEach(spot => {
+               if (spot.active) {
+                   ctx.beginPath();
+                   ctx.arc(spot.x, spot.y, 10, 0, Math.PI * 2);
+                   ctx.fillStyle = spot.color;
+                   ctx.fill();
+               }
+           });
+       }
+
+
+       function drawDots() {
+           const counts = { red: 0, lime: 0, blue: 0 };
+
+
+           dots.forEach(dot => {
+               const nearbyColors = spots
+                   .filter(spot => spot.active)
+                   .filter(spot => {
+                       const dist = Math.hypot(spot.x - dot.x, spot.y - dot.y);
+                       return dist <= RADIUS_DISTANCE;
+                   })
+                   .map(spot => spot.color);
+
+
+               if (radiusEffectEnabled.value) {
+                   if (nearbyColors.length > 0) {
+                       dot.color = blendColors(nearbyColors);
+                      
+                       nearbyColors.forEach(color => {
+                           if (counts[color] !== undefined) {
+                               counts[color]++;
+                           }
+                       });
+                   } else {
+                       dot.color = "gray";
+                   }
+               } else {
+                   const nearestSpot = spots
+                       .filter(spot => spot.active)
+                       .reduce((nearest, spot) => {
+                           const dist = Math.hypot(spot.x - dot.x, spot.y - dot.y);
+                           return dist < nearest.dist ? { spot, dist } : nearest;
+                       }, { spot: null, dist: Infinity }).spot;
+
+
+                   dot.color = nearestSpot ? nearestSpot.color : "gray";
+
+
+                   if (dot.color !== "gray" && counts[dot.color] !== undefined) {
+                       counts[dot.color]++;
+                   }
+               }
+
+
+               ctx.beginPath();
+               ctx.arc(dot.x, dot.y, 5, 0, Math.PI * 2);
+               ctx.fillStyle = dot.color;
+               ctx.fill();
+           });
+
+
+           document.getElementById('redCount').textContent = counts.red;
+           document.getElementById('limeCount').textContent = counts.lime;
+           document.getElementById('blueCount').textContent = counts.blue;
+       }
+
+
+       function draw() {
+           ctx.clearRect(0, 0, width, height);
+           drawAxes();
+           drawDots();
+           drawSpots();
+       }
+
+
+       // Toggle radius effect
+       document.getElementById('toggleRadiusEffect').addEventListener('click', () => {
+           radiusEffectEnabled.value = !radiusEffectEnabled.value;
+           document.getElementById('toggleRadiusEffect').textContent = radiusEffectEnabled.value
+               ? "Disable Radius Effect"
+               : "Enable Radius Effect";
+           draw();
+       });
+
+
+       // Toggle visibility of spotty kids :c
+       ['red', 'lime', 'blue'].forEach((color, index) => {
+           document.getElementById(`toggle${color.charAt(0).toUpperCase() + color.slice(1)}`)
+               .addEventListener('click', () => {
+                   spots[index].active = !spots[index].active;
+                   draw();
+               });
+       });
+
+
+       // Make sotty draggable
+       let draggingSpot = null;
+
+
+       canvas.addEventListener('mousedown', e => {
+           const x = e.offsetX;
+           const y = e.offsetY;
+           draggingSpot = spots.find(
+               spot => spot.active && Math.hypot(spot.x - x, spot.y - y) < 10
+           );
+       });
+
+
+       canvas.addEventListener('mousemove', e => {
+           if (draggingSpot) {
+               draggingSpot.x = e.offsetX;
+               draggingSpot.y = e.offsetY;
+               draw();
+           }
+       });
+
+
+       canvas.addEventListener('mouseup', () => {
+           draggingSpot = null;
+       });
+
+
+       draw();
+   </script>
+   <a href="../pages/scorevote.html">Score Voting</a>
+</body>
+</html>
+
+
+

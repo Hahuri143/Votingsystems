@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Voting System</title>
+   <style>
+       canvas {
+           border: 1px solid black;
+           display: block;
+           margin: 20px auto;
+       }
+       .controls {
+           text-align: center;
+           margin-top: 10px;
+       }
+       .controls table {
+           margin: 10px auto;
+           border-collapse: collapse;
+       }
+       th, td {
+           border: 1px solid black;
+           padding: 5px 10px;
+       }
+       .controls button {
+           margin: 5px;
+       }
+   </style>
+</head>
+<body>
+   <canvas id="xyCanvas" width="500" height="500"></canvas>
+   <div class="controls">
+       <table>
+           <thead>
+               <tr>
+                   <th>Spots</th>
+                   <th>Rating 1</th>
+                   <th>Rating 2</th>
+                   <th>Rating 3</th>
+                   <th>Rating 4</th>
+                   <th>Rating 5</th>
+                   <th>Total Votes</th>
+               </tr>
+           </thead>
+           <tbody id="dotCountTable">
+               <tr>
+                   <td>Red</td>
+                   <td id="red1">0</td>
+                   <td id="red2">0</td>
+                   <td id="red3">0</td>
+                   <td id="red4">0</td>
+                   <td id="red5">0</td>
+                   <td id="redTotal">0</td>
+               </tr>
+               <tr>
+                   <td>Lime</td>
+                   <td id="lime1">0</td>
+                   <td id="lime2">0</td>
+                   <td id="lime3">0</td>
+                   <td id="lime4">0</td>
+                   <td id="lime5">0</td>
+                   <td id="limeTotal">0</td>
+               </tr>
+               <tr>
+                   <td>Blue</td>
+                   <td id="blue1">0</td>
+                   <td id="blue2">0</td>
+                   <td id="blue3">0</td>
+                   <td id="blue4">0</td>
+                   <td id="blue5">0</td>
+                   <td id="blueTotal">0</td>
+               </tr>
+           </tbody>
+       </table>
+   </div>
+
+   <script>
+       const canvas = document.getElementById('xyCanvas');
+       const ctx = canvas.getContext('2d');
+       const width = canvas.width;
+       const height = canvas.height;
+
+       // Spots setup
+       const spots = [
+           { x: 150, y: 350, color: 'red', votes: [0, 0, 0, 0, 0] },
+           { x: 250, y: 150, color: 'lime', votes: [0, 0, 0, 0, 0] },
+           { x: 350, y: 250, color: 'blue', votes: [0, 0, 0, 0, 0] }
+       ];
+
+       // Array to store 300 voter dots with random positions
+       const dots = Array.from({ length: 300 }, () => ({
+           x: Math.random() * width,
+           y: Math.random() * height,
+       }));
+
+       // Function to calculate squared distance between two points
+       function calculateSquaredDistance(x1, y1, x2, y2) {
+           return ((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1));
+       }
+
+       // Function to map squared distance to a rating between 1 and 5 based on thresholds
+       function mapDistanceToRating(x1, y1, x2, y2) {
+           const gdistance = calculateSquaredDistance(x1, y1, x2, y2); // Squared distance
+
+           // Set adjusted threshold values for each rating category (squared distance)
+           const thresholds = {
+               1: 90000,  // farthest distance (lowest rating)
+               2: 70000,
+               3: 50000,
+               4: 30000,
+               5: 10000   // closest distance (highest rating)
+           };
+
+           // Determine rating based on the squared distance
+           for (let i = 5; i >= 1; i--) {
+               if (gdistance <= thresholds[i]) {
+                   return i;
+               }
+           }
+           return 1;  // Default to rating 1 if no threshold matches
+       }
+
+       // Function to draw spots on the canvas
+       function drawSpots() {
+           spots.forEach(spot => {
+               ctx.beginPath();
+               ctx.arc(spot.x, spot.y, 10, 0, Math.PI * 2);
+               ctx.fillStyle = spot.color;
+               ctx.fill();
+           });
+       }
+
+       // Function to draw dots (voters)
+       function drawDots() {
+           dots.forEach(dot => {
+               ctx.beginPath();
+               ctx.arc(dot.x, dot.y, 5, 0, Math.PI * 2);
+               ctx.fillStyle = 'gray';
+               ctx.fill();
+           });
+       }
+
+       // Calculate the votes for each spot
+       function calculateVotes() {
+           // Reset votes
+           spots.forEach(spot => {
+               spot.votes = [0, 0, 0, 0, 0];
+           });
+
+           // Calculate votes for each dot
+           dots.forEach(dot => {
+               spots.forEach(spot => {
+                   const distance = calculateSquaredDistance(dot.x, dot.y, spot.x, spot.y);
+
+                   // Map the distance to a rating between 1 and 5
+                   const rating = mapDistanceToRating(dot.x, dot.y, spot.x, spot.y);
+
+                   // Increment the corresponding rating for this spot
+                   spot.votes[rating - 1] += 1;
+               });
+           });
+
+           updateTable();
+       }
+
+       // Update the rating table
+       function updateTable() {
+           spots.forEach((spot, index) => {
+               const colors = ['red', 'lime', 'blue'];
+               for (let i = 0; i < 5; i++) {
+                   document.getElementById(`${colors[index]}${i + 1}`).textContent = spot.votes[i];
+               }
+               const totalVotes = spot.votes.reduce((sum, vote) => sum + vote, 0);
+               document.getElementById(`${colors[index]}Total`).textContent = totalVotes;
+           });
+       }
+
+       // Drag functionality for moving spots
+       let draggingSpot = null;
+
+       canvas.addEventListener('mousedown', e => {
+           const x = e.offsetX;
+           const y = e.offsetY;
+           draggingSpot = spots.find(
+               spot => Math.hypot(spot.x - x, spot.y - y) < 10
+           );
+       });
+
+       canvas.addEventListener('mousemove', e => {
+           if (draggingSpot) {
+               draggingSpot.x = e.offsetX;
+               draggingSpot.y = e.offsetY;
+               draw();
+           }
+       });
+
+       canvas.addEventListener('mouseup', () => {
+           draggingSpot = null;
+       });
+
+       // Draw function
+       function draw() {
+           ctx.clearRect(0, 0, width, height); // Clear canvas
+           drawSpots();
+           drawDots();
+           calculateVotes();
+       }
+
+       // Initial drawing
+       draw();
+   </script>
+   <a href="../pages/graph.html">Other voting systems</a>
+</body>
+</html>
