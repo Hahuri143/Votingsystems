@@ -4,6 +4,37 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Voting System</title>
+
+
+  <script>
+    function syncDotsData() {
+        const storedDots = localStorage.getItem('dots');
+        if (storedDots) {
+            dots = JSON.parse(storedDots);
+        } else {
+            dots = Array.from({ length: 200 }, () => ({
+                x: Math.random() * width,
+                y: Math.random() * height,
+                color: "gray",
+            }));
+            localStorage.setItem('dots', JSON.stringify(dots));
+        }
+    }
+    
+    // Listen for changes in localStorage from other tabs/pages
+    window.addEventListener('storage', (event) => {
+        if (event.key === 'dots') {
+            dots = JSON.parse(event.newValue);
+            draw();
+        }
+    });
+    
+    syncDotsData(); // Ensure initial sync before drawing
+</script>
+
+
+
+  
   <style>
       canvas {
           border: 1px solid black;
