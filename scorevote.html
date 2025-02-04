@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Voting System</title>
 
-
   <script>
     function syncDotsData() {
         const storedDots = localStorage.getItem('dots');
@@ -20,7 +19,7 @@
             localStorage.setItem('dots', JSON.stringify(dots));
         }
     }
-    
+
     // Listen for changes in localStorage from other tabs/pages
     window.addEventListener('storage', (event) => {
         if (event.key === 'dots') {
@@ -28,13 +27,10 @@
             draw();
         }
     });
-    
+
     syncDotsData(); // Ensure initial sync before drawing
-</script>
+  </script>
 
-
-
-  
   <style>
       canvas {
           border: 1px solid black;
@@ -104,16 +100,15 @@
           </tbody>
       </table>
       <button id="randomizeVoters">Randomize Voters</button>
+      <button id="changeDots">Change Number of Dots</button>
       <p>Average Dot Coordinates: <span id="avgCoordinates">Not calculated yet</span></p>
   </div>
-
 
   <script>
       const canvas = document.getElementById('xyCanvas');
       const ctx = canvas.getContext('2d');
       const width = canvas.width;
       const height = canvas.height;
-
 
       // Spots setup
       const spots = [
@@ -122,13 +117,12 @@
           { x: 350, y: 250, color: 'blue', votes: [0, 0, 0, 0, 0] }
       ];
 
-
       // Try to load saved dots from localStorage
       let dots = JSON.parse(localStorage.getItem('dots'));
      
       // If no saved dots, generate random dots and save to localStorage
       if (!dots) {
-          dots = Array.from({ length: 500 }, () => ({
+          dots = Array.from({ length: 100 }, () => ({
               x: Math.random() * width,
               y: Math.random() * height,
           }));
@@ -137,12 +131,32 @@
 
       // Randomize voters function
       document.getElementById('randomizeVoters').addEventListener('click', () => {
-          dots = Array.from({ length: 500 }, () => ({
+          dots = Array.from({ length: 100 }, () => ({
               x: Math.random() * width,
               y: Math.random() * height,
           }));
           localStorage.setItem('dots', JSON.stringify(dots));
           draw();
+      });
+
+      // Function to change the number of dots
+      function changeNumberOfDots(newNumberOfDots) {
+          dots = Array.from({ length: newNumberOfDots }, () => ({
+              x: Math.random() * width,
+              y: Math.random() * height,
+          }));
+          localStorage.setItem('dots', JSON.stringify(dots));
+          draw(); // Redraw the canvas with the new number of dots
+      }
+
+      // Add an event listener for the new "Change Number of Dots" button
+      document.getElementById('changeDots').addEventListener('click', () => {
+          const newNumber = prompt("Enter the new number of dots:");
+          if (newNumber && !isNaN(newNumber) && newNumber > 0) {
+              changeNumberOfDots(Number(newNumber)); // Change the number of dots
+          } else {
+              alert("Please enter a valid number.");
+          }
       });
 
       // Function to calculate squared distance between two points
@@ -154,7 +168,6 @@
       function mapDistanceToRating(x1, y1, x2, y2) {
           const gdistance = calculateSquaredDistance(x1, y1, x2, y2); // Squared distance
 
-
           // Set adjusted threshold values for each rating category (squared distance)
           const thresholds = {
               1: 90000,  // farthest distance (lowest rating)
@@ -164,7 +177,6 @@
               5: 10000   // closest distance (highest rating)
           };
 
-
           // Determine rating based on the squared distance
           for (let i = 5; i >= 1; i--) {
               if (gdistance <= thresholds[i]) {
@@ -173,7 +185,6 @@
           }
           return 1;  // Default to rating 1 if no threshold matches
       }
-
 
       // Function to draw spots on the canvas
       function drawSpots() {
@@ -185,7 +196,6 @@
           });
       }
 
-
       // Function to draw dots (voters)
       function drawDots() {
           dots.forEach(dot => {
@@ -196,7 +206,6 @@
           });
       }
 
-
       // Calculate the votes for each spot
       function calculateVotes() {
           // Reset votes
@@ -204,26 +213,17 @@
               spot.votes = [0, 0, 0, 0, 0];
           });
 
-
           // Calculate votes for each dot
           dots.forEach(dot => {
               spots.forEach(spot => {
                   const distance = calculateSquaredDistance(dot.x, dot.y, spot.x, spot.y);
-
-
-                  // Map the distance to a rating between 1 and 5
                   const rating = mapDistanceToRating(dot.x, dot.y, spot.x, spot.y);
-
-
-                  // Increment the corresponding rating for this spot
                   spot.votes[rating - 1] += 1;
               });
           });
 
-
           updateTable();
       }
-
 
       // Update the rating table
       function updateTable() {
@@ -237,10 +237,8 @@
           });
       }
 
-
       // Drag functionality for moving spots
       let draggingSpot = null;
-
 
       canvas.addEventListener('mousedown', e => {
           const x = e.offsetX;
@@ -250,7 +248,6 @@
           );
       });
 
-
       canvas.addEventListener('mousemove', e => {
           if (draggingSpot) {
               draggingSpot.x = e.offsetX;
@@ -259,11 +256,9 @@
           }
       });
 
-
       canvas.addEventListener('mouseup', () => {
           draggingSpot = null;
       });
-
 
       // Function to calculate and log the average coordinates of all dots
       function calculateAverageCoordinates() {
@@ -271,25 +266,20 @@
           let totalY = 0;
           let totalCount = dots.length;
 
-
           dots.forEach(dot => {
               totalX += dot.x;
               totalY += dot.y;
           });
 
-
           const avgX = totalX / totalCount;
           const avgY = totalY / totalCount;
-
 
           // Update the DOM with the average coordinates
           document.getElementById('avgCoordinates').textContent = `X: ${avgX.toFixed(2)}, Y: ${avgY.toFixed(2)}`;
 
-
           // Set the new imaginary spot at the average coordinates
           averageSpot = { x: avgX, y: avgY, color: 'purple', active: true };
       }
-
 
       // Function to draw the imaginary spot
       function drawImaginarySpot() {
@@ -301,7 +291,6 @@
           }
       }
 
-
       // Draw function
       function draw() {
           ctx.clearRect(0, 0, width, height); // Clear canvas
@@ -311,12 +300,11 @@
           calculateVotes();
       }
 
-
       // Initial drawing and average calculation
       calculateAverageCoordinates();
       draw();
   </script>
+  
 <a href="https://hahuri143.github.io/Votingsystems/graph.html" title="Voting timee">Score Voting</a>
-   
 </body>
 </html>
